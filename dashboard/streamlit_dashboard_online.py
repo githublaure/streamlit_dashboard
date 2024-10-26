@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 
 # API URL
-api_url = "public IP address of of API EC2 instance."
+api_url = "https://44.203.251.123"
 
 # Charger le SHAP explainer
 explainer = joblib.load("../models/shap_explainer.pkl")
