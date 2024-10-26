@@ -11,23 +11,6 @@ loaded_pipeline = joblib.load(pipeline_path)
 explainer_path = "../models/shap_explainer.pkl"
 loaded_shap_explainer = joblib.load(explainer_path)
 
-# Créer l'API
-app = FastAPI()
-
-# Charger les données des clients
-data_clients = pd.read_csv("../data/processed/test_feature_engineering_sample.csv")
-
-# Assurez-vous que la colonne SK_ID_CURR est bien en float
-data_clients['SK_ID_CURR'] = data_clients['SK_ID_CURR'].astype(float)
-
-# Debugging: Vérifiez si les données sont bien chargées
-print(f"Data loaded successfully with {len(data_clients)} rows.")
-
-from fastapi import FastAPI, HTTPException
-import joblib
-import pandas as pd
-import numpy as np
-
 # Charger le pipeline complet (prétraitement + modèle)
 pipeline_path = "../models/xgb_pipeline_tuned.pkl"
 loaded_pipeline = joblib.load(pipeline_path)
@@ -39,9 +22,11 @@ loaded_shap_explainer = joblib.load(explainer_path)
 # Créer l'API
 app = FastAPI()
 
-
 # Charger les données des clients
 data_clients = pd.read_csv("../data/processed/test_feature_engineering_sample.csv")
+
+# Debugging: Vérifiez si les données sont bien chargées
+print(f"Data loaded successfully with {len(data_clients)} rows.")
 
 # Assurez-vous que la colonne SK_ID_CURR est bien en float
 data_clients['SK_ID_CURR'] = data_clients['SK_ID_CURR'].astype(float)
