@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 
 # API URL
-api_url = "http://52.6.207.52 "
+api_url = "http://52.6.207.52"
 
 # Charger le SHAP explainer
 explainer = joblib.load("../models/shap_explainer.pkl")
