@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 import pandas as pd
 import os
-import sys
+import sys #On ajoute sys.path.append("../") dans le fichier test_api.py pour s'assurer que les modules soient importés correctement depuis la racine du projet
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -25,9 +25,6 @@ def load_data():
     data_clients = pd.read_csv(data_path)
     data_clients['SK_ID_CURR'] = data_clients['SK_ID_CURR'].astype(float)
     return data_clients
-
-# Tests API ici...
-
 
 ### Tests Unitaires ###
 
