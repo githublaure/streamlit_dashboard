@@ -1,5 +1,4 @@
-name: CI/CD Pipeline
-act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
+name: Deploy and Test API
 
 on:
   push:
@@ -10,33 +9,141 @@ on:
       - main
 
 jobs:
-  build-and-test:
+  deploy:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.1.4']  
 
     steps:
-      # 1. Checkout du code
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      # 2. Configurer Python
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }} 
+          python-version: '3.8'
 
-      # 3. Installe les dépendances
-      - name: Install dependencies
+      - name: Install API dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
+          pip install -r api/requirements_api.txt
+          pip install -r tests/requirements_tests.txt  # Pour les tests API uniquement
+
+      - name: Deploy API to EC2
+        env:
+          # Variables pour accéder à votre instance EC2
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          EC2_API_INSTANCE_ID: ${{ secrets.EC2_API_INSTANCE_ID }}
+        run: |
+          ssh -i "path/to/your-key.pem" ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
+          # Exécuter les commandes de déploiement sur EC2 pour API
+          cd /path/to/your/api
+          git pull origin main
+          source /path/to/your/venv/bin/activate
+          pip install -r requirements_api.txt
+          # Démarrer l'API en arrière-plan avec nohup
+          nohup uvicorn api:app --host 0.0.0.0 --port 8000 &
+          EOF
+
+      - name: Deploy Dashboard to EC2
+        env:
+          EC2_DASHBOARD_INSTANCE_ID: ${{ secrets.EC2_DASHBOARD_INSTANCE_ID }}
+        run: |
+          ssh -i "path/to/your-key.pem" ubuntu@${{ secrets.EC2_DASHBOARD_HOST }} << 'EOF'
+          # Exécuter les commandes de déploiement pour le dashboard
+          cd /path/to/your/dashboard
+          git pull origin main
+          source /path/to/your/venv/bin/activate
+          pip install -r requirements_dashboard.txt
+          systemctl restart your_dashboard_service
+          EOF
+
+      - name: Wait for API to start
+        run: sleep 30  # Attente pour laisser le temps à l’API de démarrer
+
+      - name: Run API tests
+        env:
+          API_URL: ${{ secrets.API_URL }}  # URL de votre API déployée
+        run: |
+          # Exécute les tests de l'API
+          pytest tests/test_api.py --maxfail=1 --disable-warnings -v
+
+
+          """
+          name: Deploy Dashboard and API with CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install Dependencies for API
+        run: |
+          python -m venv venv_api
+          source venv_api/bin/activate
+          pip install -r api/requirements_api.txt
+          # Ajouter la commande pour le déploiement de l'API sur EC2 ici
+
+      - name: Install Dependencies for Dashboard
+        run: |
+          python -m venv venv_dashboard
+          source venv_dashboard/bin/activate
+          pip install -r dashboard/requirements_dashboard.txt
+          # Ajouter la commande pour le déploiement du dashboard sur EC2 ici
+
+      - name: Install Dependencies for Tests
+        run: |
+          python -m venv venv_tests
+          source venv_tests/bin/activate
+          pip install -r tests/requirements_tests.txt
+
+      - name: Run API Tests
+        run: |
+          source venv_tests/bin/activate
+          pytest tests/test_api.py -v
+"""
+
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@<ec2-public-ip> << 'EOF'
+          cd /path/to/your/app
+          git pull origin main
+          source ~/venv/bin/activate
           pip install -r requirements.txt
-
-      # 4. Lance les tests
-      - name: Run tests
-        run: |
-          source venv/bin/activate
-          pytest --maxfail=5 --disable-warnings -q
+          sudo service nginx restart
+          nohup uvicorn api:app --host 0.0.0.0 --port 8000 --reload &
+          nohup streamlit run dashboard/streamlit_dashboard.py --server.port 8501 &
+        EOF

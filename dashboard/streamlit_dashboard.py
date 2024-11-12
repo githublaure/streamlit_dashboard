@@ -1,18 +1,15 @@
 import streamlit as st
 import requests
 import pandas as pd
-import shap
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objects as go
-import joblib
 import numpy as np
+import shap
 
-# API URL
-api_url = "http://127.0.0.1:8000"
 
-# Charger le SHAP explainer
-explainer = joblib.load("../models/shap_explainer.pkl")
+# URL de l'API
+api_url = "http://127.0.0.1:5001"
 
 # Titre du dashboard
 st.title("Tableau de bord de Prédiction du Crédit")
@@ -133,29 +130,34 @@ if st.session_state['selected_client']:
                 shap_response = requests.get(shap_values_url).json()
 
                 if "shap_values" in shap_response:
+                    # Convertir en tableau numpy pour SHAP
                     shap_values = shap_response['shap_values']
-                    shap_values_np = np.array(shap_values[0])
+                    shap_values_np = np.array(shap_values)
 
-                    if np.ndim(explainer.expected_value) > 0:
-                        base_value = float(explainer.expected_value[0])  # Extraire le premier élément si c'est un tableau
-                    else:
-                        base_value = float(explainer.expected_value)  # Utiliser directement si c'est un scalaire
+                    # Vérifier la dimension des valeurs SHAP
+                    if shap_values_np.ndim == 1:
+                        shap_values_np = shap_values_np.reshape(1, -1)
 
+                    # Remplacer `base_value` par une valeur par défaut ou reçue dans la réponse si nécessaire
+                    base_value = 0  # Utilisez une valeur fixe si `explainer.expected_value` n'est pas disponible
 
                     st.subheader("Valeur attendue (Expected Value)")
                     st.markdown(f"La valeur attendue du modèle est : **{round(base_value, 4)}**.")
 
+                    # Visualisation locale avec waterfall plot
                     st.subheader("Analyse locale des SHAP values : Contribution spécifique de chaque feature pour ce client")
                     fig_local = plt.figure(figsize=(10, 6))
-                    shap.waterfall_plot(shap.Explanation(values=shap_values_np, base_values=base_value, data=client_data.iloc[0, :]), show=False)
+                    shap.waterfall_plot(shap.Explanation(values=shap_values_np[0], base_values=base_value, data=client_data.iloc[0]), show=False)
                     st.pyplot(fig_local)
 
+                    # Visualisation globale avec summary plot
                     st.subheader("Analyse globale des SHAP values : Importance des features à travers tous les clients")
-                    shap_values_matrix = shap_values_np.reshape(1, -1) if shap_values_np.ndim == 1 else shap_values_np
                     fig_global = plt.figure(figsize=(10, 6))
-                    shap.summary_plot(shap_values_matrix, client_data, plot_type="bar", show=False)
+                    shap.summary_plot(shap_values_np, client_data, plot_type="bar", show=False)
                     st.pyplot(fig_global)
                 else:
                     st.error("Erreur lors de la récupération des valeurs SHAP.")
+
+
     except Exception as e:
         st.error(f"Erreur lors de la récupération des données du client : {str(e)}")
