@@ -11,20 +11,20 @@ import numpy as np
 # API URL
 api_url = "http://18-233-222-214"
 
-# Charger le SHAP explainer
+# Download SHAP explainer
 explainer = joblib.load("../models/shap_explainer.pkl")
 
-# Titre du dashboard
+# Streamlit Dashboard Title
 st.title("Tableau de bord de Prédiction du Crédit")
 
-# Appel API pour obtenir les données des clients complets (par exemple, les IDs clients)
+# API call to collect all datas from clients iDs
 data_clients_url = f"{api_url}/client_data/all"
 try:
     response = requests.get(data_clients_url)
     response.raise_for_status()  # Vérifie les erreurs HTTP
     data_clients_response = response.json()
     
-    # Assurez-vous que la clé "data" est bien présente dans la réponse
+    # Makes sure data is available
     if "data" not in data_clients_response:
         st.error("Erreur : La réponse de l'API ne contient pas de 'data'.")
         client_ids = []
@@ -34,14 +34,14 @@ except requests.exceptions.RequestException as e:
     st.error(f"Erreur lors du chargement des données clients : {str(e)}")
     client_ids = []
 
-# Sélection de l'ID client via une `selectbox`
+# Select ID client with a `selectbox`
 client_id = st.selectbox("Sélectionnez l'ID du client", client_ids)
 
-# Sauvegarder l'ID client sélectionné dans `session_state`
+# Saves ID client in a `session_state`
 if 'client_id' not in st.session_state:
     st.session_state['client_id'] = client_id
 
-# Appel API pour récupérer les données complètes des clients (avec toutes les colonnes)
+# Call API to retrieve complete data of clients
 all_client_data_url = f"{api_url}/client_data/all_full"
 try:
     all_data_response = requests.get(all_client_data_url)
@@ -54,11 +54,11 @@ try:
         all_data = pd.DataFrame(all_data_response['data'])  # Toutes les données clients complètes
 except requests.exceptions.RequestException as e:
     st.error(f"Erreur lors du chargement des données complètes : {str(e)}")
-    all_data = pd.DataFrame()  # Crée un dataframe vide par défaut
+    all_data = pd.DataFrame()  
 
-# Vérifier si des données clients sont disponibles
+# Checks if data are available
 if not all_data.empty:
-    # Appel API pour récupérer les données spécifiques du client sélectionné
+    # Call Api to retrieve data from a specific client
     client_data_url = f"{api_url}/client_data/{client_id}"
     client_response = requests.get(client_data_url).json()
 
@@ -67,20 +67,20 @@ if not all_data.empty:
     else:
         client_data = pd.DataFrame(client_response['data'])
 
-        # Afficher les données du client
+        # Shows client's data
         st.subheader("Données du client")
         st.write(client_data)
 
-        # Extraire dynamiquement la liste des features disponibles dans le dataset du client
+        # Extract each features 
         available_features = client_data.columns.tolist()
 
-        # Sélection de la feature à comparer
+        # Select which feature to compare
         selected_feature = st.selectbox("Sélectionnez la variable à comparer", available_features)
 
-        # Comparaison de la variable sélectionnée entre le client et la moyenne de la population
+        # Compare feature with the mean of the population
         st.subheader(f"Comparaison de la variable {selected_feature} entre le client et la moyenne")
 
-        # Comparer la variable entre le client et la moyenne de la population
+          # Compare feature with the mean of the population
         client_value = client_data[selected_feature].values[0]
 
         # Vérifier si la variable existe dans toutes les données
