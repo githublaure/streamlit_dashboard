@@ -5,25 +5,25 @@ import numpy as np
 import logging
 
 
-"""
-Gestion des exceptions et codes de statut HTTP : On a modifié les exceptions levées dans api.py pour
- que les erreurs spécifiques, comme 404 Not Found, soient correctement transmises aux tests.
-
-
-
-"""
 app = FastAPI()
-# Initialisation du logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Charger le pipeline complet (prétraitement + modèle)
 pipeline_path = "../models/xgb_pipeline_tuned.pkl"
 loaded_pipeline = joblib.load(pipeline_path)
-
-# Charger l'explainer SHAP
 explainer_path = "../models/shap_explainer.pkl"
-loaded_shap_explainer = joblib.load(explainer_path)
+
+# Variable globale pour stocker l'explainer et éviter de le recharger à chaque requête
+loaded_shap_explainer = None
+
+def get_explainer():
+    global loaded_shap_explainer
+    if loaded_shap_explainer is None:
+        loaded_shap_explainer = joblib.load(explainer_path)
+    return loaded_shap_explainer
+
+
 
 # Fonction pour charger les données des clients
 def load_data():
@@ -54,7 +54,7 @@ def get_all_client_data(data_clients: pd.DataFrame = Depends(get_data_clients)):
         logger.error(f"Error in retrieving all client data: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur interne du serveur : {str(e)}")
 
-@app.get("/client_data/{client_id}")
+@app.get("/client_data/{client_id}") #202006.0
 def get_client_data(client_id: int, data_clients: pd.DataFrame = Depends(get_data_clients)):
     try:
         client_id_as_float = float(client_id)
@@ -75,23 +75,30 @@ def get_client_data(client_id: int, data_clients: pd.DataFrame = Depends(get_dat
 @app.get("/prediction/{client_id}")
 def get_prediction(client_id: int, data_clients: pd.DataFrame = Depends(get_data_clients)):
     try:
+        logger.info(f"Attempting prediction for client ID: {client_id}")
         client_id_as_float = float(client_id)
         client_data = data_clients[data_clients["SK_ID_CURR"] == client_id_as_float].drop(columns=["TARGET"], errors='ignore')
 
         if client_data.empty:
+            logger.warning(f"Client {client_id} not found in data")
             raise HTTPException(status_code=404, detail="Client non trouvé")
 
+        logger.info(f"Client data shape: {client_data.shape}")
         client_data_np = client_data.to_numpy()
+        logger.info("Making prediction")
         prediction_proba = loaded_pipeline.predict_proba(client_data_np)[:, 1][0]
         threshold = getattr(loaded_pipeline.named_steps['model'], 'get_threshold', lambda: 0.5)()
+        logger.info(f"Prediction made: {prediction_proba}, Threshold: {threshold}")
 
         return {"score": float(prediction_proba), "threshold": float(threshold)}
     
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in prediction: {e}")
+        logger.error(f"Error in prediction: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur interne du serveur : {str(e)}")
+
+
 
 @app.get("/shap_values/{client_id}")
 def get_shap_values(client_id: int, data_clients: pd.DataFrame = Depends(get_data_clients)):
@@ -102,10 +109,11 @@ def get_shap_values(client_id: int, data_clients: pd.DataFrame = Depends(get_dat
         if client_data.empty:
             raise HTTPException(status_code=404, detail="Client non trouvé")
 
+        explainer = get_explainer()
         client_data_np = client_data.to_numpy().reshape(1, -1)
-        client_shap_values = loaded_shap_explainer.shap_values(client_data_np)
+        client_shap_values = explainer.shap_values(client_data_np)
 
-        # Vérification de la structure des valeurs SHAP
+        # Formatage des valeurs SHAP
         if isinstance(client_shap_values, list) and len(client_shap_values) == 1:
             client_shap_values = client_shap_values[0]
 
@@ -114,5 +122,6 @@ def get_shap_values(client_id: int, data_clients: pd.DataFrame = Depends(get_dat
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error in getting SHAP values: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur interne du serveur : {str(e)}")
+        logger.error(f"Erreur lors de la récupération des valeurs SHAP : {e}")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+

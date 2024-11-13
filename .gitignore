@@ -2,3 +2,33 @@ datadrift
 .DS_Store
 venv/
 mlruns/
+data/processed/train_feature_engineering.csv
+data/processed/train_feature_engineering_sample.csv
+notebooks/3-modelling-7_11_24.ipynb
+models/*
+!models/xgb_pipeline_tuned.pkl
+**/__init__.py
+*.pyc
+venv_api/
+venv_dashboard/
+venv_mod/
+**/env/
+
+api/*
+!api/api.py
+!api/requirements_api.txt
+
+tests/*
+!tests/test_api.py
+!tests/requirements_tests.txt
+
+dashboard/*
+!dashboard/streamlit_dashboard_online.py
+!dashboard/requirements_dashboard.txt
+notebooks/*
+!notebooks/3-modelling.ipynb
+!notebooks/requirements_modelling.txt
+**/__init__.py
+
+.github/workflows/ci-cd-pipeline copy 2.yml
+.github/workflows/ci-cd-pipeline copy.yml
