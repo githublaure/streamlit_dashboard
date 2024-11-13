@@ -11,6 +11,7 @@ import numpy as np
 # API URL
 api_url = "http://18.233.222.214"
 
+
 # Download SHAP explainer
 explainer = joblib.load("../models/shap_explainer.pkl")
 
