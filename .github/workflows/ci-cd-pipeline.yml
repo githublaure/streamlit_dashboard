@@ -19,7 +19,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - run: |
+
+      - name: Set sparse checkout
+        run: |
           git sparse-checkout init --cone
           git sparse-checkout set api models data/processed tests --skip-checks
           git read-tree -mu HEAD
@@ -58,47 +60,46 @@ jobs:
         run: |
           source venv_tests/bin/activate
           pytest tests/test_api.py --maxfail=1 --disable-warnings -v
-    
 
       # Étape 6 : Configurer SSH pour la connexion EC2
       - name: Set up SSH for EC2 connection
         if: success()  # Continue only if tests pass
         uses: webfactory/ssh-agent@v0.5.3
         with:
-          ssh-private-key: ${{ secrets.EC2_API_SSH_KEY}}
+          ssh-private-key: ${{ secrets.EC2_API_SSH_KEY }}
 
+      # Étape 7 : Déployer sur EC2
       - name: Deploy to EC2
-      if: success()  # Continue only if SSH setup succeeds
-      run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
-          # Aller dans le répertoire de l'application
-          cd ~/streamlit_dashboard_api
+        if: success()  # Continue only if SSH setup succeeds
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
+            # Aller dans le répertoire de l'application
+            cd ~/streamlit_dashboard_api
+            
+            # Configurer le sparse checkout pour importer seulement les fichiers nécessaires sur EC2
+            git config core.sparseCheckout true
+            echo "api/" > .git/info/sparse-checkout
+            echo "models/" >> .git/info/sparse-checkout
+            echo "data/processed/" >> .git/info/sparse-checkout
+            echo "api/requirements_api.txt" >> .git/info/sparse-checkout
+            git read-tree -mu HEAD
+            
+            # Pull des mises à jour depuis le dépôt
+            git pull origin main
     
-          # Configurer le sparse checkout pour importer seulement les fichiers nécessaires sur EC2
-          git config core.sparseCheckout true
-          echo "api/" > .git/info/sparse-checkout
-          echo "models/" >> .git/info/sparse-checkout
-          echo "data/processed/" >> .git/info/sparse-checkout
-          echo "api/requirements_api.txt" >> .git/info/sparse-checkout
-          git read-tree -mu HEAD
+            # Aller dans le répertoire de l'API
+            cd api
     
-          # Pull des mises à jour depuis le dépôt
-          git pull origin main
+            # Activer l'environnement virtuel existant (le service utilise venv_api)
+            source ~/venv_api/bin/activate
     
-          # Aller dans le répertoire de l'API
-          cd api
+            # Installer les dépendances nécessaires
+            pip install --upgrade pip
+            pip install -r requirements_api.txt
     
-          # Activer l'environnement virtuel existant (le service utilise venv_api)
-          source ~/venv_api/bin/activate
+            # Redémarrer le service systemd de l'API FastAPI
+            sudo systemctl restart fastapi_api.service
     
-          # Installer les dépendances nécessaires
-          pip install --upgrade pip
-          pip install -r requirements_api.txt
-    
-          # Redémarrer le service systemd de l'API FastAPI
-          sudo systemctl restart fastapi_api.service
-    
-          # Redémarrer Nginx pour prendre en compte les modifications
-          sudo systemctl restart nginx
-        EOF
-    
+            # Redémarrer Nginx pour prendre en compte les modifications
+            sudo systemctl restart nginx
+          EOF
