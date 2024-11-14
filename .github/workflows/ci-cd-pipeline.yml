@@ -67,38 +67,38 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_API_SSH_KEY}}
 
-      # Étape 7 : Déployer sur EC2
       - name: Deploy to EC2
-        if: success()  # Continue only if SSH setup succeeds
-        run: |
-         ssh -tt -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} 'EOF'
-            # Aller dans le répertoire de l'application
-            cd ~/streamlit_dashboard_api
-            
-            # Configurer le sparse checkout pour importer seulement les fichiers nécessaires sur EC2
-            git config core.sparseCheckout true
-            echo "api/" > .git/info/sparse-checkout
-            echo "models/" >> .git/info/sparse-checkout
-            echo "data/processed/" >> .git/info/sparse-checkout
-            echo "api/requirements_api.txt" >> .git/info/sparse-checkout
-            git read-tree -mu HEAD
-            
-            # Pull des mises à jour depuis le dépôt
-            git pull origin main
-
-            # Aller dans le répertoire de l'API
-            cd api
-
-            # Activer l'environnement virtuel existant (le service utilise venv_api)
-            source ~/venv_api/bin/activate
-
-            # Installer les dépendances nécessaires
-            pip install --upgrade pip
-            pip install -r requirements_api.txt
-
-            # Redémarrer le service systemd de l'API FastAPI
-            sudo systemctl restart fastapi_api.service
-
-            # Redémarrer Nginx pour prendre en compte les modifications
-            sudo systemctl restart nginx
-          EOF
+      if: success()  # Continue only if SSH setup succeeds
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
+          # Aller dans le répertoire de l'application
+          cd ~/streamlit_dashboard_api
+    
+          # Configurer le sparse checkout pour importer seulement les fichiers nécessaires sur EC2
+          git config core.sparseCheckout true
+          echo "api/" > .git/info/sparse-checkout
+          echo "models/" >> .git/info/sparse-checkout
+          echo "data/processed/" >> .git/info/sparse-checkout
+          echo "api/requirements_api.txt" >> .git/info/sparse-checkout
+          git read-tree -mu HEAD
+    
+          # Pull des mises à jour depuis le dépôt
+          git pull origin main
+    
+          # Aller dans le répertoire de l'API
+          cd api
+    
+          # Activer l'environnement virtuel existant (le service utilise venv_api)
+          source ~/venv_api/bin/activate
+    
+          # Installer les dépendances nécessaires
+          pip install --upgrade pip
+          pip install -r requirements_api.txt
+    
+          # Redémarrer le service systemd de l'API FastAPI
+          sudo systemctl restart fastapi_api.service
+    
+          # Redémarrer Nginx pour prendre en compte les modifications
+          sudo systemctl restart nginx
+        EOF
+    
