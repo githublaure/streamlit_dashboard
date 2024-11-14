@@ -13,22 +13,15 @@ import numpy as np
 # API URL
 api_url = "http://18.233.222.214"
 
+# Construire le chemin vers le modèle de manière robuste
+base_path = os.path.dirname(os.path.abspath(__file__))  # Récupère le répertoire de ce script
+explainer_path = os.path.join(base_path, '..', 'models', 'shap_explainer.pkl')
 
-# Définir le chemin correct du fichier explainer
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.join(current_dir, '..', '..')  # Remonter de deux niveaux vers la racine du projet
-models_path = os.path.join(project_root, 'models')
-explainer_path = os.path.join(models_path, 'shap_explainer.pkl')
-
-# Vérifiez le chemin pour vous assurer qu'il est correct (facultatif, à des fins de debug)
-st.write(f"Trying to load explainer from: {explainer_path}")
-
-# Charger le SHAP explainer
-try:
-    explainer = joblib.load(explainer_path)
-except FileNotFoundError:
+# Charger l'explainer
+if not os.path.exists(explainer_path):
     st.error(f"Le fichier explainer n'a pas été trouvé au chemin spécifié : {explainer_path}")
-    st.stop()
+else:
+    explainer = joblib.load(explainer_path)
 
 
 
