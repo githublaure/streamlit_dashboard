@@ -9,22 +9,28 @@ import plotly.graph_objects as go
 import joblib
 import numpy as np
 
-# Définir la base du projet pour éviter les ".."
-project_root = os.path.dirname(os.path.abspath(__file__))
 
 # API URL
 api_url = "http://18.233.222.214"
 
-# Définir la base du projet
-project_root = os.path.dirname(os.path.abspath(__file__))
+
+# Définir le chemin correct du fichier explainer
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.join(current_dir, '..', '..')  # Remonter de deux niveaux vers la racine du projet
 models_path = os.path.join(project_root, 'models')
 explainer_path = os.path.join(models_path, 'shap_explainer.pkl')
 
-# Charger l'explainer
-explainer = joblib.load(explainer_path)
+# Vérifiez le chemin pour vous assurer qu'il est correct (facultatif, à des fins de debug)
+st.write(f"Trying to load explainer from: {explainer_path}")
 
-# Download SHAP explainer
-explainer = joblib.load(explainer_path)
+# Charger le SHAP explainer
+try:
+    explainer = joblib.load(explainer_path)
+except FileNotFoundError:
+    st.error(f"Le fichier explainer n'a pas été trouvé au chemin spécifié : {explainer_path}")
+    st.stop()
+
+
 
 # Streamlit Dashboard Title
 st.title("Tableau de bord de Prédiction du Crédit")
