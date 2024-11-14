@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Charger le pipeline complet (prétraitement + modèle)
-pipeline_path = "../models/xgb_pipeline_tuned.pkl"
+pipeline_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgb_pipeline_tuned.pkl')
 loaded_pipeline = joblib.load(pipeline_path)
 explainer_path = "../models/shap_explainer.pkl"
 
