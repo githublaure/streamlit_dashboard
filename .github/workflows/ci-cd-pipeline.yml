@@ -65,7 +65,7 @@ jobs:
         if: success()  # Continue only if tests pass
         uses: webfactory/ssh-agent@v0.5.3
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+          ssh-private-key: ${{ secrets.EC2_API_SSH_KEY}}
 
       # Étape 7 : Déployer sur EC2
       - name: Deploy to EC2
