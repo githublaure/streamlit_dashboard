@@ -44,6 +44,8 @@ def load_data():
     except Exception as e:
         pytest.fail(f"Échec du chargement des données : {str(e)}")
 
+        
+
 ### Tests Unitaires ###
 
 def test_model_loading(load_model):

@@ -23,6 +23,7 @@ jobs:
           git sparse-checkout init --cone
           git sparse-checkout set api models data/processed tests --skip-checks
           git read-tree -mu HEAD
+          ls -R #checks if the files are present
 
       # Étape 2 : Configurer Python 3.12.7
       - name: Set up Python 3.12.7
@@ -52,9 +53,12 @@ jobs:
 
       # Étape 5 : Exécuter les tests de l'API
       - name: Run API Tests
+        env:
+          DATA_FILE_PATH: data/processed/test_feature_engineering_sample.csv
         run: |
           source venv_tests/bin/activate
           pytest tests/test_api.py --maxfail=1 --disable-warnings -v
+    
 
       # Étape 6 : Configurer SSH pour la connexion EC2
       - name: Set up SSH for EC2 connection
