@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import requests
 import pandas as pd
@@ -8,17 +9,23 @@ import plotly.graph_objects as go
 import joblib
 import numpy as np
 
+# Définir la base du projet pour éviter les ".."
+project_root = os.path.dirname(os.path.abspath(__file__))
+
 # API URL
 api_url = "http://18.233.222.214"
 
+# Définir les chemins complets
+models_path = os.path.join(project_root, 'models')
+explainer_path = os.path.join(models_path, 'shap_explainer.pkl')
 
 # Download SHAP explainer
-explainer = joblib.load("../models/shap_explainer.pkl")
+explainer = joblib.load(explainer_path)
 
 # Streamlit Dashboard Title
 st.title("Tableau de bord de Prédiction du Crédit")
 
-# API call to collect all datas from clients iDs
+# API call to collect all data from client IDs
 data_clients_url = f"{api_url}/client_data/all"
 try:
     response = requests.get(data_clients_url)
@@ -56,6 +63,8 @@ try:
 except requests.exceptions.RequestException as e:
     st.error(f"Erreur lors du chargement des données complètes : {str(e)}")
     all_data = pd.DataFrame()  
+
+
 
 # Checks if data are available
 if not all_data.empty:
