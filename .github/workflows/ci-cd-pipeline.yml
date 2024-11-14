@@ -1,5 +1,5 @@
 name: Deploy and Test API
-# Install dependencies, run tests, if tests pass, deploy on EC2
+# Install dependencies, run tests, if tests ok deploy on EC2
 
 on:
   push:
@@ -21,9 +21,10 @@ jobs:
           fetch-depth: 0
       - run: |
           git sparse-checkout init --cone
-          git sparse-checkout set api models data/processed tests --skip-checks
+          git sparse-checkout set api models tests --skip-checks
+          echo "api/requirements_api.txt" >> .git/info/sparse-checkout
+          echo "tests/requirements_tests.txt" >> .git/info/sparse-checkout
           git read-tree -mu HEAD
-          ls -R #checks if the files are present
 
       # Étape 2 : Configurer Python 3.12.7
       - name: Set up Python 3.12.7
@@ -39,39 +40,32 @@ jobs:
           pip install --upgrade pip
           pip install -r tests/requirements_tests.txt
 
-      # Étape 4 : Vérifier la présence des modèles et des données
-      - name: Verify model and data file existence
+      # Étape 4 : Vérifier la présence du modèle
+      - name: Verify model file existence
         run: |
           if [ ! -f "models/xgb_pipeline_tuned.pkl" ]; then
             echo "Error: Model file xgb_pipeline_tuned.pkl not found!"
             exit 1
           fi
-          if [ ! -f "data/processed/test_feature_engineering_sample.csv" ]; then
-            echo "Error: Data file test_feature_engineering_sample.csv not found!"
-            exit 1
-          fi
 
       # Étape 5 : Exécuter les tests de l'API
       - name: Run API Tests
-        env:
-          DATA_FILE_PATH: data/processed/test_feature_engineering_sample.csv
         run: |
           source venv_tests/bin/activate
           pytest tests/test_api.py --maxfail=1 --disable-warnings -v
-    
 
       # Étape 6 : Configurer SSH pour la connexion EC2
       - name: Set up SSH for EC2 connection
         if: success()  # Continue only if tests pass
         uses: webfactory/ssh-agent@v0.5.3
         with:
-          ssh-private-key: ${{ secrets.EC2_API_SSH_KEY}}
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
       # Étape 7 : Déployer sur EC2
       - name: Deploy to EC2
         if: success()  # Continue only if SSH setup succeeds
         run: |
-           ssh -tt -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} 'EOF'
+          ssh -tt -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
             # Aller dans le répertoire de l'application
             cd ~/streamlit_dashboard_api
             
