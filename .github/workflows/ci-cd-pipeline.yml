@@ -1,9 +1,6 @@
 name: Deploy and Test API
 #Install dependencies, run tests, if tests ok deploy on EC2
 
-name: Deploy and Test API
-# Install dependencies, run tests, if tests ok deploy on EC2
-
 on:
   push:
     branches:
