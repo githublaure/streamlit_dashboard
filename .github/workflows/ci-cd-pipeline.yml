@@ -71,7 +71,7 @@ jobs:
       - name: Deploy to EC2
         if: success()  # Continue only if SSH setup succeeds
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
+           ssh -tt -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} 'EOF'
             # Aller dans le répertoire de l'application
             cd ~/streamlit_dashboard_api
             
