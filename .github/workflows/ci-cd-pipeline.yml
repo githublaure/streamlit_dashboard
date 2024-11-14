@@ -22,6 +22,14 @@ jobs:
         with:
           python-version: '3.12.7'
 
+      - name: Set up Sparse Checkout for Required Files
+        run: |
+          git config core.sparseCheckout true
+          echo "api/" > .git/info/sparse-checkout
+          echo "models/" >> .git/info/sparse-checkout
+          echo "data/processed/" >> .git/info/sparse-checkout
+          git read-tree -mu HEAD
+
       - name: Install Dependencies for Tests
         run: |
           python -m venv venv_tests
@@ -45,34 +53,34 @@ jobs:
         run: |
             ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
             
-            # Go to the application directory
+            # Aller dans le répertoire de l'application
             cd ~/streamlit_dashboard_api
-            
-            # Configure sparse checkout to import only necessary files
+
+            # Configurer le sparse checkout pour importer seulement les fichiers nécessaires
             git config core.sparseCheckout true
             echo "api/" > .git/info/sparse-checkout
             echo "models/" >> .git/info/sparse-checkout
             echo "data/processed/" >> .git/info/sparse-checkout
             echo "requirements_api.txt" >> .git/info/sparse-checkout
             git read-tree -mu HEAD
-            
-            # Pull updates from the repository
+
+            # Pull des mises à jour depuis le dépôt
             git pull origin main
 
-            # Go to the API directory
+            # Aller dans le répertoire de l'API
             cd api
 
-            # Activate the existing virtual environment (the service uses venv_api)
+            # Activer l'environnement virtuel existant (le service utilise venv_api)
             source ~/venv_api/bin/activate
-            
-            # Install necessary dependencies
+
+            # Installer les dépendances nécessaires
             pip install --upgrade pip
             pip install -r requirements_api.txt
 
-            # Restart the FastAPI service systemd for the API
+            # Redémarrer le service systemd de l'API FastAPI
             sudo systemctl restart fastapi_api.service
 
-            # Restart Nginx to apply the changes
+            # Redémarrer Nginx pour prendre en compte les modifications
             sudo systemctl restart nginx
             EOF
 
@@ -83,6 +91,5 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL }}  
         run: |
-          # Run API tests after deployment
+          # Exécute les tests de l'API après le déploiement
           pytest tests/test_api.py --maxfail=1 --disable-warnings -v
-
