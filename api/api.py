@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Charger le pipeline complet (prétraitement + modèle)
 pipeline_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgb_pipeline_tuned.pkl')
 loaded_pipeline = joblib.load(pipeline_path)
-explainer_path = "../models/shap_explainer.pkl"
+explainer_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'shap_explainer.pkl')
 
 # Variable globale pour stocker l'explainer et éviter de le recharger à chaque requête
 loaded_shap_explainer = None
