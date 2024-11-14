@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
       - run: |
           git sparse-checkout init --cone
-          git sparse-checkout set api models tests requirements_api.txt requirements_tests.txt
+          git sparse-checkout set api models tests api/requirements_api.txt tests/requirements_tests.txt
 
       # Étape 2 : Configurer Python 3.12.7
       - name: Set up Python 3.12.7
@@ -71,7 +71,7 @@ jobs:
             echo "api/" > .git/info/sparse-checkout
             echo "models/" >> .git/info/sparse-checkout
             echo "data/processed/" >> .git/info/sparse-checkout
-            echo "requirements_api.txt" >> .git/info/sparse-checkout
+            echo "api/requirements_api.txt" >> .git/info/sparse-checkout
             git read-tree -mu HEAD
             
             # Pull des mises à jour depuis le dépôt
