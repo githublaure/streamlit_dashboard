@@ -15,9 +15,13 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 # API URL
 api_url = "http://18.233.222.214"
 
-# Définir les chemins complets
+# Définir la base du projet
+project_root = os.path.dirname(os.path.abspath(__file__))
 models_path = os.path.join(project_root, 'models')
 explainer_path = os.path.join(models_path, 'shap_explainer.pkl')
+
+# Charger l'explainer
+explainer = joblib.load(explainer_path)
 
 # Download SHAP explainer
 explainer = joblib.load(explainer_path)
