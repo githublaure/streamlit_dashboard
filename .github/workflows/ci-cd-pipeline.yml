@@ -1,5 +1,5 @@
 name: Deploy and Test API
-#Install dependencies, run tests, if tests ok deploy on EC2
+# Install dependencies, run tests, if tests ok deploy on EC2
 
 on:
   push:
@@ -42,16 +42,13 @@ jobs:
 
       - name: Deploy to EC2
         if: success()  # Continue only if SSH setup succeeds
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
             ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
-            # Go to your application directory (streamlit_dashboard_api)
+            
+            # Aller dans le répertoire de l'application
             cd ~/streamlit_dashboard_api
             
-            # Configure sparse checkout to import only necessary files
+            # Configurer le sparse checkout pour importer seulement les fichiers nécessaires
             git config core.sparseCheckout true
             echo "api/" > .git/info/sparse-checkout
             echo "models/" >> .git/info/sparse-checkout
@@ -59,23 +56,32 @@ jobs:
             echo "requirements_api.txt" >> .git/info/sparse-checkout
             git read-tree -mu HEAD
             
-            # Pull updates from the repository
+            # Pull des mises à jour depuis le dépôt
             git pull origin main
 
-            # Go to the API directory
+            # Aller dans le répertoire de l'API
             cd api
-            
-            # Create and activate a virtual environment
-            python3.12 -m venv ~/venv_api
+
+            # Activer l'environnement virtuel existant (le service utilise venv_api)
             source ~/venv_api/bin/activate
             
-            # Install necessary dependencies
+            # Installer les dépendances nécessaires
             pip install --upgrade pip
             pip install -r requirements_api.txt
-            
-            # Restart nginx
-            sudo service nginx restart
-            
-            # Launch the API in the background
-            nohup uvicorn api:app --host 0.0.0.0 --port 8000 --reload &
+
+            # Redémarrer le service systemd de l'API FastAPI
+            sudo systemctl restart fastapi_api.service
+
+            # Redémarrer Nginx pour prendre en compte les modifications
+            sudo systemctl restart nginx
             EOF
+
+      - name: Wait for API to start
+        run: sleep 10  # Waits for 10 seconds before running the next step
+
+      - name: Run API Tests (Post Deployment)
+        env:
+          API_URL: ${{ secrets.API_URL }}  
+        run: |
+          # Exécute les tests de l'API après le déploiement
+          pytest tests/test_api.py --maxfail=1 --disable-warnings -v
