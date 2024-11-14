@@ -20,11 +20,11 @@ jobs:
         with:
           fetch-depth: 0
       - run: |
-        git sparse-checkout init --cone
-        git sparse-checkout set api models tests --skip-checks
-        echo "api/requirements_api.txt" >> .git/info/sparse-checkout
-        echo "tests/requirements_tests.txt" >> .git/info/sparse-checkout
-        git read-tree -mu HEAD
+          git sparse-checkout init --cone
+          git sparse-checkout set api models tests --skip-checks
+          echo "api/requirements_api.txt" >> .git/info/sparse-checkout
+          echo "tests/requirements_tests.txt" >> .git/info/sparse-checkout
+          git read-tree -mu HEAD
 
       # Étape 2 : Configurer Python 3.12.7
       - name: Set up Python 3.12.7
