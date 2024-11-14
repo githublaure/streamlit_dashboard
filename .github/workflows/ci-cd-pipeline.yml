@@ -18,7 +18,6 @@ jobs:
       - name: Checkout repository with sparse checkout
         uses: actions/checkout@v2
         with:
-          # Clone seulement certains répertoires spécifiques
           fetch-depth: 0
       - run: |
           git sparse-checkout init --cone
@@ -38,20 +37,28 @@ jobs:
           pip install --upgrade pip
           pip install -r tests/requirements_tests.txt
 
-      # Étape 4 : Exécuter les tests de l'API
+      # Étape 4 : Vérifier la présence du modèle
+      - name: Verify model file existence
+        run: |
+          if [ ! -f "models/xgb_pipeline_tuned.pkl" ]; then
+            echo "Error: Model file xgb_pipeline_tuned.pkl not found!"
+            exit 1
+          fi
+
+      # Étape 5 : Exécuter les tests de l'API
       - name: Run API Tests
         run: |
           source venv_tests/bin/activate
           pytest tests/test_api.py --maxfail=1 --disable-warnings -v
 
-      # Étape 5 : Configurer SSH pour la connexion EC2
+      # Étape 6 : Configurer SSH pour la connexion EC2
       - name: Set up SSH for EC2 connection
         if: success()  # Continue only if tests pass
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      # Étape 6 : Déployer sur EC2
+      # Étape 7 : Déployer sur EC2
       - name: Deploy to EC2
         if: success()  # Continue only if SSH setup succeeds
         run: |
