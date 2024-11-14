@@ -1,7 +1,6 @@
 name: Deploy and Test API
 # Install dependencies, run tests, if tests ok deploy on EC2
 
-
 on:
   push:
     branches:
@@ -46,10 +45,10 @@ jobs:
         run: |
             ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_API_HOST }} << 'EOF'
             
-            # Aller dans le répertoire de l'application
+            # Go to the application directory
             cd ~/streamlit_dashboard_api
             
-            # Configurer le sparse checkout pour importer seulement les fichiers nécessaires
+            # Configure sparse checkout to import only necessary files
             git config core.sparseCheckout true
             echo "api/" > .git/info/sparse-checkout
             echo "models/" >> .git/info/sparse-checkout
@@ -57,23 +56,23 @@ jobs:
             echo "requirements_api.txt" >> .git/info/sparse-checkout
             git read-tree -mu HEAD
             
-            # Pull des mises à jour depuis le dépôt
+            # Pull updates from the repository
             git pull origin main
 
-            # Aller dans le répertoire de l'API
+            # Go to the API directory
             cd api
 
-            # Activer l'environnement virtuel existant (le service utilise venv_api)
+            # Activate the existing virtual environment (the service uses venv_api)
             source ~/venv_api/bin/activate
             
-            # Installer les dépendances nécessaires
+            # Install necessary dependencies
             pip install --upgrade pip
             pip install -r requirements_api.txt
 
-            # Redémarrer le service systemd de l'API FastAPI
+            # Restart the FastAPI service systemd for the API
             sudo systemctl restart fastapi_api.service
 
-            # Redémarrer Nginx pour prendre en compte les modifications
+            # Restart Nginx to apply the changes
             sudo systemctl restart nginx
             EOF
 
@@ -84,5 +83,6 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL }}  
         run: |
-          # Exécute les tests de l'API après le déploiement
+          # Run API tests after deployment
           pytest tests/test_api.py --maxfail=1 --disable-warnings -v
+
