@@ -192,3 +192,5 @@ if not all_data.empty:
         fig_global = plt.figure(figsize=(10, 6))
         shap.summary_plot(np.array(shap_values), client_data, plot_type="bar", show=False)
         st.pyplot(fig_global)  # Affichage du graphique bar avec st.pyplot
+
+        st.subheader("© Streamlit dashboard by Laure Agrech")
