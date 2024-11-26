@@ -13,184 +13,184 @@ import numpy as np
 # API URL
 api_url = "http://18.233.222.214"
 
-# Construire le chemin vers le modèle de manière robuste
-base_path = os.path.dirname(os.path.abspath(__file__))  # Récupère le répertoire de ce script
+# Build the path to the model in a robust way
+base_path = os.path.dirname(os.path.abspath(__file__))  # Get the directory of this script
 explainer_path = os.path.join(base_path, '..', 'models', 'shap_explainer.pkl')
 
-# Charger l'explainer
+# Load the explainer
 if not os.path.exists(explainer_path):
-    st.error(f"Le fichier explainer n'a pas été trouvé au chemin spécifié : {explainer_path}")
+st.error(f"The explainer file was not found at the specified path: {explainer_path}")
 else:
-    explainer = joblib.load(explainer_path)
+explainer = joblib.load(explainer_path)
 
 
 
 # Streamlit Dashboard Title
-st.title("Tableau de bord de Prédiction du Crédit")
+st.title("Credit Prediction Dashboard")
 
 # API call to collect all data from client IDs
 data_clients_url = f"{api_url}/client_data/all"
 try:
-    response = requests.get(data_clients_url)
-    response.raise_for_status()  # Vérifie les erreurs HTTP
-    data_clients_response = response.json()
-    
-    # Makes sure data is available
-    if "data" not in data_clients_response:
-        st.error("Erreur : La réponse de l'API ne contient pas de 'data'.")
-        client_ids = []
-    else:
-        client_ids = [client['SK_ID_CURR'] for client in data_clients_response['data']]
-except requests.exceptions.RequestException as e:
-    st.error(f"Erreur lors du chargement des données clients : {str(e)}")
+response = requests.get(data_clients_url)
+response.raise_for_status()  # Check for HTTP errors
+data_clients_response = response.json()
+
+# Makes sure data is available
+if "data" not in data_clients_response:
+    st.error("Error: The API response does not contain 'data'.")
     client_ids = []
+else:
+    client_ids = [client['SK_ID_CURR'] for client in data_clients_response['data']]
+except requests.exceptions.RequestException as e:
+st.error(f"Error loading client data: {str(e)}")
+client_ids = []
 
-# Select ID client with a `selectbox`
-client_id = st.selectbox("Sélectionnez l'ID du client", client_ids)
+# Select client ID with a `selectbox`
+client_id = st.selectbox("Select Client ID", client_ids)
 
-# Saves ID client in a `session_state`
+# Saves client ID in a `session_state`
 if 'client_id' not in st.session_state:
-    st.session_state['client_id'] = client_id
+st.session_state['client_id'] = client_id
 
 # Call API to retrieve complete data of clients
 all_client_data_url = f"{api_url}/client_data/all_full"
 try:
-    all_data_response = requests.get(all_client_data_url)
-    all_data_response.raise_for_status()  # Vérifie les erreurs HTTP
-    all_data_response = all_data_response.json()
-    if "data" not in all_data_response:
-        st.error(f"Erreur : Les données complètes des clients ne sont pas disponibles.")
-        all_data = pd.DataFrame()
-    else:
-        all_data = pd.DataFrame(all_data_response['data'])  # Toutes les données clients complètes
+all_data_response = requests.get(all_client_data_url)
+all_data_response.raise_for_status()  # Check for HTTP errors
+all_data_response = all_data_response.json()
+if "data" not in all_data_response:
+    st.error("Error: Complete client data is not available.")
+    all_data = pd.DataFrame()
+else:
+    all_data = pd.DataFrame(all_data_response['data'])  # All complete client data
 except requests.exceptions.RequestException as e:
-    st.error(f"Erreur lors du chargement des données complètes : {str(e)}")
-    all_data = pd.DataFrame()  
+st.error(f"Error loading complete data: {str(e)}")
+all_data = pd.DataFrame()  
 
 
 
 # Checks if data are available
 if not all_data.empty:
-    # Call Api to retrieve data from a specific client
-    client_data_url = f"{api_url}/client_data/{client_id}"
-    client_response = requests.get(client_data_url).json()
+# Call Api to retrieve data from a specific client
+client_data_url = f"{api_url}/client_data/{client_id}"
+client_response = requests.get(client_data_url).json()
 
-    if "detail" in client_response:
-        st.error(f"Erreur : {client_response['detail']}")
-    else:
-        client_data = pd.DataFrame(client_response['data'])
+if "detail" in client_response:
+    st.error(f"Error: {client_response['detail']}")
+else:
+    client_data = pd.DataFrame(client_response['data'])
 
-        # Shows client's data
-        st.subheader("Données du client")
-        st.write(client_data)
+    # Shows client's data
+    st.subheader("Client Data")
+    st.write(client_data)
 
-        # Extract each features 
-        available_features = client_data.columns.tolist()
+    # Extract each features 
+    available_features = client_data.columns.tolist()
 
-        # Select which feature to compare
-        selected_feature = st.selectbox("Sélectionnez la variable à comparer", available_features)
+    # Select which feature to compare
+    selected_feature = st.selectbox("Select Feature to Compare", available_features)
+
+    # Compare feature with the mean of the population
+    st.subheader(f"Comparison of {selected_feature} between the client and the mean")
 
         # Compare feature with the mean of the population
-        st.subheader(f"Comparaison de la variable {selected_feature} entre le client et la moyenne")
+    client_value = client_data[selected_feature].values[0]
 
-          # Compare feature with the mean of the population
-        client_value = client_data[selected_feature].values[0]
+    # Check if the variable exists in all data
+    if selected_feature not in all_data.columns:
+        st.error(f"The column {selected_feature} does not exist in the complete data.")
+    else:
+        mean_value = all_data[selected_feature].mean()
 
-        # Vérifier si la variable existe dans toutes les données
-        if selected_feature not in all_data.columns:
-            st.error(f"La colonne {selected_feature} n'existe pas dans les données complètes.")
-        else:
-            mean_value = all_data[selected_feature].mean()
+        # Visualization of the comparison
+        fig, ax = plt.subplots(1, 2, figsize=(12, 4))
 
-            # Visualisation de la comparaison
-            fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+        # Client vs Mean Comparison
+        sns.barplot(x=["client", "mean"], y=[client_value, mean_value], ax=ax[0])
+        ax[0].set_title(f"Comparison of the client to the mean ({selected_feature})")
 
-            # Comparaison client vs moyenne
-            sns.barplot(x=["client", "moyenne"], y=[client_value, mean_value], ax=ax[0])
-            ax[0].set_title(f"Comparaison du client à la moyenne ({selected_feature})")
+        # Distribution in the population
+        sns.boxplot(x=all_data[selected_feature], ax=ax[1])
+        ax[1].set_title(f"Distribution of {selected_feature} in the population")
 
-            # Distribution dans la population
-            sns.boxplot(x=all_data[selected_feature], ax=ax[1])
-            ax[1].set_title(f"Répartition de la variable {selected_feature} dans la clientèle")
+        st.pyplot(fig)  # Display the graph
 
-            st.pyplot(fig)  # Affichage du graphique
+    # API call to get the prediction and threshold
+    prediction_url = f"{api_url}/prediction/{client_id}"
+    prediction_response = requests.get(prediction_url).json()
+    prediction_score = prediction_response['score']
+    threshold = prediction_response['threshold']  # The threshold retrieved from the API
 
-        # Appel API pour obtenir la prédiction et le threshold
-        prediction_url = f"{api_url}/prediction/{client_id}"
-        prediction_response = requests.get(prediction_url).json()
-        prediction_score = prediction_response['score']
-        threshold = prediction_response['threshold']  # Le threshold récupéré via l'API
+    # Calculate the business score based on F-beta
+    prediction_percentage = round(prediction_score * 100, 2)
+    
+    # Display the result as an indicator
+    st.subheader("Prediction Result")
+    st.markdown(f"""
+        **Score Explanation:**
+        - This score of **{prediction_percentage}%** is an estimate of the probability that this client **will not repay** the credit (score = 1).
+        - If this score exceeds the threshold of **{round(threshold * 100, 2)}%**, the credit is **rejected**.
+        - Below this threshold, the credit is **approved**.
+    """)
 
-        # Calcul du score business basé sur le F-beta
-        prediction_percentage = round(prediction_score * 100, 2)
-        
-        # Affichage du résultat sous forme d'indicateur
-        st.subheader("Résultat de la prédiction")
-        st.markdown(f"""
-            **Explication du score :**
-            - Ce score de **{prediction_percentage}%** est une estimation de la probabilité que ce client **ne rembourse pas** le crédit (score = 1).
-            - Si ce score dépasse le seuil de **{round(threshold * 100, 2)}%**, le crédit est **refusé**.
-            - En dessous de ce seuil, le crédit est **accordé**.
-        """)
+    score_text = "Credit Rejected" if prediction_score >= threshold else "Credit Approved"
 
-        score_text = "Crédit refusé" if prediction_score >= threshold else "Crédit accordé"
-
-        # Gauge chart (Jauge de score) avec le score de prédiction et le threshold
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=prediction_score * 100,  # Score en pourcentage
-            title={'text': f"Score de Prédiction: {prediction_percentage}%"},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "black"},
-                'steps': [
-                    {'range': [0, threshold * 100], 'color': "green"},
-                    {'range': [threshold * 100, 100], 'color': "red"},
-                ],
-                'threshold': {
-                    'line': {'color': "blue", 'width': 4},
-                    'thickness': 0.75,
-                    'value': threshold * 100  # Ligne de threshold
-                }
+    # Gauge chart with the prediction score and threshold
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=prediction_score * 100,  # Score in percentage
+        title={'text': f"Prediction Score: {prediction_percentage}%"},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': "black"},
+            'steps': [
+                {'range': [0, threshold * 100], 'color': "green"},
+                {'range': [threshold * 100, 100], 'color': "red"},
+            ],
+            'threshold': {
+                'line': {'color': "blue", 'width': 4},
+                'thickness': 0.75,
+                'value': threshold * 100  # Threshold line
             }
-        ))
+        }
+    ))
 
-        st.plotly_chart(fig_gauge)
+    st.plotly_chart(fig_gauge)
 
-        # Afficher la décision finale
-        st.markdown(f"**Décision :** {score_text} (Seuil: {round(threshold * 100, 2)}%)")
+    # Display the final decision
+    st.markdown(f"**Decision:** {score_text} (Threshold: {round(threshold * 100, 2)}%)")
 
-        # Appel API pour obtenir les SHAP values locales
-        shap_values_url = f"{api_url}/shap_values/{client_id}"
-        shap_response = requests.get(shap_values_url).json()
-        shap_values = shap_response['shap_values']
+    # API call to get the local SHAP values
+    shap_values_url = f"{api_url}/shap_values/{client_id}"
+    shap_response = requests.get(shap_values_url).json()
+    shap_values = shap_response['shap_values']
 
-        # Correction pour éviter l'erreur avec les listes
-        shap_values_np = np.array(shap_values[0])  # Convertir en tableau NumPy
+    # Correction to avoid error with lists
+    shap_values_np = np.array(shap_values[0])  # Convert to NumPy array
 
-        # Assurer que `base_values` est un seul float (pour les modèles binaires ou multi-classes)
-        if isinstance(explainer.expected_value, np.ndarray) and len(explainer.expected_value) > 1:
-            base_value = explainer.expected_value[0]  # Pour un modèle multi-classe
-        else:
-            base_value = float(explainer.expected_value)  # Modèle binaire
+    # Make sure `base_values` is a single float (for binary or multi-class models)
+    if isinstance(explainer.expected_value, np.ndarray) and len(explainer.expected_value) > 1:
+        base_value = explainer.expected_value[0]  # For multi-class model
+    else:
+        base_value = float(explainer.expected_value)  # Binary model
 
-        # Affichage de la valeur attendue (expected value)
-        st.subheader("Valeur attendue (Expected Value)")
-        st.markdown(f"La valeur attendue du modèle est : **{round(base_value, 4)}**.")
-        st.markdown("C'est la prédiction moyenne du modèle avant de prendre en compte les contributions spécifiques de chaque variable.")
+    # Display the expected value
+    st.subheader("Expected Value")
+    st.markdown(f"The expected value of the model is: **{round(base_value, 4)}**.")
+    st.markdown("This is the average prediction of the model before taking into account the specific contributions of each variable.")
 
-        # **Waterfall plot** : Analyse locale des SHAP values
-        st.subheader("Analyse locale des SHAP values : Contribution spécifique de chaque feature pour ce client")
-        st.markdown("Ce graphique montre comment les différentes features influencent la prédiction pour ce client particulier. Chaque barre indique l'impact d'une feature qui pousse la prédiction soit vers le haut, soit vers le bas.")
-        fig_local = plt.figure(figsize=(10, 6))
-        shap.waterfall_plot(shap.Explanation(values=shap_values_np, base_values=base_value, data=client_data.iloc[0, :]), show=False)
-        st.pyplot(fig_local)  # Affichage du graphique Waterfall avec st.pyplot
+    # Waterfall plot: Local analysis of SHAP values
+    st.subheader("Local Analysis of SHAP Values: Specific contribution of each feature for this client")
+    st.markdown("This graph shows how different features influence the prediction for this particular client. Each bar indicates the impact of a feature that pushes the prediction either up or down.")
+    fig_local = plt.figure(figsize=(10, 6))
+    shap.waterfall_plot(shap.Explanation(values=shap_values_np, base_values=base_value, data=client_data.iloc[0, :]), show=False)
+    st.pyplot(fig_local)  # Display the Waterfall graph with st.pyplot
 
-        # **Bar plot** : Analyse globale des SHAP values
-        st.subheader("Analyse globale des SHAP values : Importance des features à travers tous les clients")
-        st.markdown("Ce graphique montre quelles features sont globalement les plus importantes pour le modèle, en moyenne, à travers tous les clients.")
-        fig_global = plt.figure(figsize=(10, 6))
-        shap.summary_plot(np.array(shap_values), client_data, plot_type="bar", show=False)
-        st.pyplot(fig_global)  # Affichage du graphique bar avec st.pyplot
+    # Bar plot: Global analysis of SHAP values
+    st.subheader("Global Analysis of SHAP Values: Importance of features across all clients")
+    st.markdown("This graph shows which features are globally most important for the model, on average, across all clients.")
+    fig_global = plt.figure(figsize=(10, 6))
+    shap.summary_plot(np.array(shap_values), client_data, plot_type="bar", show=False)
+    st.pyplot(fig_global)  # Display the bar graph with st.pyplot
 
-        st.subheader("© Streamlit dashboard by Laure Agrech")
+    st.subheader("© Streamlit dashboard by Laure Agrech")
