@@ -26,12 +26,7 @@ def get_explainer():
 
 # Function to load client data
 def load_data():
-    # Get the absolute path of the current file
-    current_directory = os.path.dirname(__file__)
-    # Build the CSV file path based on the current directory
-    data_path = os.path.join(current_directory, '..', 'data', 'processed', 'test_feature_engineering_sample.csv')
-
-    # Load the data
+    data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'test_feature_engineering_sample.csv')
     data_clients = pd.read_csv(data_path)
     data_clients['SK_ID_CURR'] = data_clients['SK_ID_CURR'].astype(float)
     return data_clients
