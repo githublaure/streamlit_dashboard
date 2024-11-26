@@ -2,10 +2,13 @@ from fastapi import FastAPI, HTTPException, Depends
 import joblib
 import pandas as pd
 import numpy as np
+import logging
 import os
 
 app = FastAPI()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Load the complete pipeline (preprocessing + model)
 pipeline_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgb_pipeline_tuned.pkl')
