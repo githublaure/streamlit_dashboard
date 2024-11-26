@@ -19,9 +19,9 @@ explainer_path = os.path.join(base_path, '..', 'models', 'shap_explainer.pkl')
 
 # Load the explainer
 if not os.path.exists(explainer_path):
-st.error(f"The explainer file was not found at the specified path: {explainer_path}")
+    st.error(f"The explainer file was not found at the specified path: {explainer_path}")
 else:
-explainer = joblib.load(explainer_path)
+    explainer = joblib.load(explainer_path)
 
 
 
@@ -31,49 +31,49 @@ st.title("Credit Prediction Dashboard")
 # API call to collect all data from client IDs
 data_clients_url = f"{api_url}/client_data/all"
 try:
-response = requests.get(data_clients_url)
-response.raise_for_status()  # Check for HTTP errors
-data_clients_response = response.json()
+    response = requests.get(data_clients_url)
+    response.raise_for_status()  # Check for HTTP errors
+    data_clients_response = response.json()
 
-# Makes sure data is available
-if "data" not in data_clients_response:
-    st.error("Error: The API response does not contain 'data'.")
-    client_ids = []
-else:
-    client_ids = [client['SK_ID_CURR'] for client in data_clients_response['data']]
+    # Makes sure data is available
+    if "data" not in data_clients_response:
+        st.error("Error: The API response does not contain 'data'.")
+        client_ids = []
+    else:
+        client_ids = [client['SK_ID_CURR'] for client in data_clients_response['data']]
 except requests.exceptions.RequestException as e:
-st.error(f"Error loading client data: {str(e)}")
-client_ids = []
+    st.error(f"Error loading client data: {str(e)}")
+    client_ids = []
 
 # Select client ID with a `selectbox`
 client_id = st.selectbox("Select Client ID", client_ids)
 
 # Saves client ID in a `session_state`
 if 'client_id' not in st.session_state:
-st.session_state['client_id'] = client_id
+    st.session_state['client_id'] = client_id
 
 # Call API to retrieve complete data of clients
 all_client_data_url = f"{api_url}/client_data/all_full"
 try:
-all_data_response = requests.get(all_client_data_url)
-all_data_response.raise_for_status()  # Check for HTTP errors
-all_data_response = all_data_response.json()
-if "data" not in all_data_response:
-    st.error("Error: Complete client data is not available.")
-    all_data = pd.DataFrame()
-else:
-    all_data = pd.DataFrame(all_data_response['data'])  # All complete client data
+    all_data_response = requests.get(all_client_data_url)
+    all_data_response.raise_for_status()  # Check for HTTP errors
+    all_data_response = all_data_response.json()
+    if "data" not in all_data_response:
+        st.error("Error: Complete client data is not available.")
+        all_data = pd.DataFrame()
+    else:
+        all_data = pd.DataFrame(all_data_response['data'])  # All complete client data
 except requests.exceptions.RequestException as e:
-st.error(f"Error loading complete data: {str(e)}")
-all_data = pd.DataFrame()  
+    st.error(f"Error loading complete data: {str(e)}")
+    all_data = pd.DataFrame()  
 
 
 
 # Checks if data are available
 if not all_data.empty:
-# Call Api to retrieve data from a specific client
-client_data_url = f"{api_url}/client_data/{client_id}"
-client_response = requests.get(client_data_url).json()
+    # Call Api to retrieve data from a specific client
+    client_data_url = f"{api_url}/client_data/{client_id}"
+    client_response = requests.get(client_data_url).json()
 
 if "detail" in client_response:
     st.error(f"Error: {client_response['detail']}")
