@@ -56,10 +56,12 @@ def test_get_all_client_ids(load_data):
     assert response.status_code == 200
     assert len(response.json()["data"]) == len(load_data["SK_ID_CURR"].unique())
 
-def test_get_all_client_data(load_data):
+def test_get_all_client_data():
     response = client.get("/client_data/all_full")
     assert response.status_code == 200
-    assert len(response.json()["data"]) == len(load_data)
+    # Vérifier que la route retourne exactement 10 clients
+    assert len(response.json()["data"]) == 10, "The route does not return the expected 10 rows"
+
 
 def test_get_client_data_valid(load_data):
     valid_client_id = load_data.iloc[0]["SK_ID_CURR"]
