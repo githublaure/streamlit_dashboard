@@ -69,10 +69,11 @@ def test_get_client_data_valid(load_data):
     assert response.status_code == 200
     assert response.json()["data"][0]["SK_ID_CURR"] == valid_client_id
 
-"""def test_get_client_data_invalid():
+def test_get_client_data_invalid():
     response = client.get("/client_data/999999")  # Non-existent ID
     assert response.status_code == 404
-    assert response.json()["detail"] == "Client 999999 not found.""""
+    assert response.json()["detail"] == "Client 999999 not found."
+
 
 
 def test_direct_prediction(load_model, load_data):
