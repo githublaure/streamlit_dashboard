@@ -13,6 +13,9 @@ import numpy as np
 # API URL
 api_url = "http://18.233.222.214"
 
+# Streamlit Dashboard Title
+st.title("Credit Prediction Dashboard")
+
 # Build the path to the model in a robust way
 base_path = os.path.dirname(os.path.abspath(__file__))  # Get the directory of this script
 explainer_path = os.path.join(base_path, '..', 'models', 'shap_explainer.pkl')
@@ -24,9 +27,6 @@ else:
     explainer = joblib.load(explainer_path)
 
 
-
-# Streamlit Dashboard Title
-st.title("Credit Prediction Dashboard")
 
 # API call to collect all data from client IDs
 data_clients_url = f"{api_url}/client_data/all"

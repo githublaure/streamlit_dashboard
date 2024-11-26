@@ -45,14 +45,16 @@ def get_all_client_ids(data_clients: pd.DataFrame = Depends(get_data_clients)):
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @app.get("/client_data/all_full")
+@app.get("/client_data/all_full")
 def get_all_client_data(data_clients: pd.DataFrame = Depends(get_data_clients)):
     try:
-        # Explicitly convert the data to avoid serialization issues
-        data_clients_json_ready = data_clients.astype(object).where(pd.notnull(data_clients), None)
+        sample_data = data_clients.head(10)  # Retourne uniquement 10 lignes
+        data_clients_json_ready = sample_data.astype(object).where(pd.notnull(sample_data), None)
         return {"data": data_clients_json_ready.to_dict(orient="records")}
     except Exception as e:
         logger.error(f"Error in retrieving all client data: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
 
 @app.get("/client_data/{client_id}")
 def get_client_data(client_id: int, data_clients: pd.DataFrame = Depends(get_data_clients)):
