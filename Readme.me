@@ -5,3 +5,51 @@ Lien vers le Dashboard de prédiction d'octroie ou de refus de crédit
 
 lien streamlit github cloud :
 lien dashboard de l'instance EC2 :
+
+fichier introductif permettant de comprendre l'objectif du projet et le découpage des dossiers, pour les applications dashboard et API
+
+Objectif du projet : Mettre en place un tableau de bord interactif afin que les responsables du service client puissent non seulement clarifier au mieux les décisions d'attribution de prêts, mais aussi offrir à leurs clients la possibilité d'accéder aisément à leurs données personnelles et de les consulter.
+
+On a déployé un dashboard qui fait appel à une api en utilisant la stack ec2, fast_api, streamlit, github et nginx
+Afin de s’assurer du bon fonctionnement de l’API,  des tests unitaires sont effectués sur certaines fonctions
+La CI/CD fait appel à des models et un dataset qui a dû être simplifié (on utilise un échantillon) afin de fonctionner.
+Voici l'arborescence du site dont le répertoire  est disponible sur github à l'adresse : https://github.com/githublaure/streamlit_dashboard/tree/main
+ 
+
+Découpage des dossiers :
+(base) MacBookPro:streamlit_dashboard laureagrech$ tree -L 2
+.
+├── Readme.me
+├── api
+│   ├── api.py
+│   └── requirements_api.txt
+├── common_requirements.txt
+├── dashboard
+│   ├── requirements_dashboard.txt
+│   ├── streamlit_dashboard copy.py
+│   ├── streamlit_dashboard.py
+│   └── streamlit_dashboard_online.py
+├── data
+│   ├── datasources
+│   └── processed
+├── datadrift
+│   ├── 4-data-drift.ipynb
+│   └── data_drift_report.html
+├── models
+│   ├── shap_explainer.pkl
+│   └── xgb_pipeline_tuned.pkl
+├── notebooks
+
+│   ├── 1-exploratory-data-analysis.ipynb
+│   ├── 2-feature-engineering.ipynb
+│   ├── 3-modelling.ipynb
+│   ├── 4-data-drift.ipynb
+│   └── requirements_modelling.txt
+├── tests
+│   ├── requirements_tests.txt
+│   ├── test_api.py
+
+Ces fichiers sont « partiellement » déployés via  le service EC2 AWS car seuls les fichiers nécessaires au déploiement sont téléchargés sur AWS (les instances sont limitées en termes d’espace). 
+Ainsi seuls les packages relatifs au dashboard sont téléchargés sur l’instance du dashboard et les packages relatifs à l’api sur l’instance de l’api, d’où les différents fichiers requirements.
+On retrouve donc sur une instance EC2 le dashboard et sur une autre instance EC2  l'API.
+A chaque modification du code, et donc à chaque push, github action vient déclenché la ci/cd et lance les tests unitaires de l’api afin que le dashboard soit à jour.
